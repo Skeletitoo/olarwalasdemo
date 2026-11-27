@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Enlace físico al manifiesto PWA para Android Chrome y escritorio -->
+    <link rel="manifest" href="./manifest.json">
+    <!-- Etiquetas para instalación como App nativa (PWA) en iOS y Android -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Carnet Universitario">
+    <meta name="theme-color" content="#ffffff">
+    <title>Carnet universitario - Prototipo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuente Inter para tipografía nítida en móvil y escritorio -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+
+        /* Evitar zoom automático al enfocar inputs en Safari iOS */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+
+        /* Animación pulsante suave para el punto verde de Validez en Vivo */
+        @keyframes livePulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+            }
+            50% {
+                opacity: 0.85;
+                transform: scale(1.08);
+                box-shadow: 0 0 0 5px rgba(34, 197, 94, 0);
+            }
+        }
+
+        .live-dot {
+            animation: livePulse 2s infinite ease-in-out;
+        }
+
+        /* Números tabulares para evitar saltos horizontales cada segundo */
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Soporte para áreas seguras en iPhone (notch / barra inferior) */
+        .safe-top {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+    </style>
+</head>
+<body class="bg-slate-200 sm:py-6 min-h-[100dvh] flex justify-center items-start sm:items-center text-gray-900">
+
+    <!-- Contenedor principal estilo dispositivo móvil (430px máx en PC, 100% en celular) -->
+    <main id="app-shell" class="w-full max-w-[430px] min-h-[100dvh] sm:min-h-[820px] sm:max-h-[900px] bg-white sm:rounded-[32px] sm:shadow-2xl sm:border sm:border-slate-300/80 overflow-hidden flex flex-col relative">
+
+        <!-- ===================================================================
+             PESTAÑA 1: CONFIGURACIÓN DE DATOS (Independiente por dispositivo)
+             =================================================================== -->
+        <section id="view-config" class="flex-1 flex flex-col bg-slate-50 overflow-y-auto safe-top safe-bottom">
+            <!-- Encabezado de configuración -->
+            <header class="bg-white border-b border-slate-200 px-5 py-4 sticky top-0 z-10 flex items-center justify-between gap-2">
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 tracking-tight">Configuración de Datos</h1>
+                    <p class="text-xs text-slate-500 mt-0.5">Se guarda solo en este dispositivo</p>
+                </div>
+                <button type="button" id="btn-reset-all" class="text-xs font-semibold px-3 py-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 active:scale-95 transition shrink-0">
+                    Restaurar
+                </button>
+            </header>
+
+            <!-- Formulario -->
+            <form id="credential-form" class="p-4 space-y-4 flex-1 flex flex-col">
+
+                <!-- 1. Carga de Imágenes (selectores independientes) -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">1. Imágenes y Escudos</h2>
+                        <span class="text-[11px] text-slate-400">Compresión auto.</span>
+                    </div>
+
+                    <!-- Fotografía del Titular (3:4) -->
+                    <div class="flex items-center gap-3.5 pb-3 border-b border-slate-100">
+                        <div class="w-[66px] h-[88px] rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                            <img id="preview-photo" src="" alt="Vista previa foto" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-2">
+                            <p class="text-sm font-semibold text-slate-800">Fotografía del titular</p>
+                            <p class="text-xs text-slate-500 leading-tight">Formato vertical (3:4).</p>
+                            <div class="flex flex-wrap gap-2">
+                                <label for="input-photo" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold rounded-xl cursor-pointer transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <span>Subir foto</span>
+                                </label>
+                                <button type="button" id="btn-clear-photo" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-xl transition">
+                                    Quitar
+                                </button>
+                            </div>
+                            <input type="file" id="input-photo" accept="image/*" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Logos Izquierdo y Derecho -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Logo Izquierdo -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center text-center space-y-2">
+                            <div id="preview-logo-left" class="w-11 h-11 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center overflow-hidden"></div>
+                            <div class="w-full">
+                                <p class="text-xs font-semibold text-slate-800">Logo Izquierdo</p>
+                                <p class="text-[11px] text-slate-500">Escudo Nacional</p>
+                            </div>
+                            <div class="flex items-center gap-1.5 w-full">
+                                <label for="input-logo-left" class="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-[11px] font-semibold rounded-lg cursor-pointer transition">
+                                    Subir
+                                </label>
+                                <button type="button" id="btn-clear-logo-left" class="py-1.5 px-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 text-[11px] font-medium rounded-lg transition" title="Quitar logo izquierdo">
+                                    ✕
+                                </button>
+                            </div>
+                            <input type="file" id="input-logo-left" accept="image/*" class="hidden">
+                        </div>
+
+                        <!-- Logo Derecho -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center text-center space-y-2">
+                            <div id="preview-logo-right" class="w-11 h-11 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center overflow-hidden"></div>
+                            <div class="w-full">
+                                <p class="text-xs font-semibold text-slate-800">Logo Derecho</p>
+                                <p class="text-[11px] text-slate-500">Escudo Univ.</p>
+                            </div>
+                            <div class="flex items-center gap-1.5 w-full">
+                                <label for="input-logo-right" class="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-[11px] font-semibold rounded-lg cursor-pointer transition">
+                                    Subir
+                                </label>
+                                <button type="button" id="btn-clear-logo-right" class="py-1.5 px-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 text-[11px] font-medium rounded-lg transition" title="Quitar logo derecho">
+                                    ✕
+                                </button>
+                            </div>
+                            <input type="file" id="input-logo-right" accept="image/*" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Imagen del Código de Barras (Opcional, reemplaza al auto-generado) -->
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center text-center space-y-2">
+                        <div id="preview-barcode-img" class="w-full h-11 rounded-lg bg-white border border-slate-200 p-1.5 flex items-center justify-center overflow-hidden"></div>
+                        <div class="w-full">
+                            <p class="text-xs font-semibold text-slate-800">Imagen de Código de Barras</p>
+                            <p class="text-[11px] text-slate-500">Opcional (si no subes, se genera automático)</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 w-full">
+                            <label for="input-barcode-img" class="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-[11px] font-semibold rounded-lg cursor-pointer transition">
+                                Subir código de barras
+                            </label>
+                            <button type="button" id="btn-clear-barcode-img" class="py-1.5 px-2.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 text-[11px] font-medium rounded-lg transition" title="Quitar imagen de código de barras">
+                                ✕
+                            </button>
+                        </div>
+                        <input type="file" id="input-barcode-img" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <!-- 2. Datos del Titular -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">2. Datos del Titular</h2>
+
+                    <div>
+                        <label for="input-name" class="block text-xs font-semibold text-slate-700 mb-1">Nombres y Apellidos</label>
+                        <input type="text" id="input-name" required placeholder="Ej. SEÑOR SIX SEVEN"
+                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition uppercase">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="input-dni" class="block text-xs font-semibold text-slate-700 mb-1">DNI</label>
+                            <input type="text" id="input-dni" inputmode="numeric" required placeholder="Ej. 67676767"
+                                   class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label for="input-status" class="block text-xs font-semibold text-slate-700 mb-1">Permanencia</label>
+                            <select id="input-status"
+                                    class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition">
+                                <option value="Activo">Activo</option>
+                                <option value="Regular">Regular</option>
+                                <option value="Egresado">Egresado</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Datos Académicos e Institucionales -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">3. Datos Académicos</h2>
+
+                    <div>
+                        <label for="input-code" class="block text-xs font-semibold text-slate-700 mb-1">Código Universitario</label>
+                        <input type="text" id="input-code" inputmode="numeric" required placeholder="Ej. 24200067"
+                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label for="input-faculty" class="block text-xs font-semibold text-slate-700 mb-1">Facultad</label>
+                        <input type="text" id="input-faculty" required
+                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition uppercase">
+                    </div>
+
+                    <div>
+                        <label for="input-school" class="block text-xs font-semibold text-slate-700 mb-1">Escuela Profesional</label>
+                        <input type="text" id="input-school" required
+                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition">
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100 space-y-3">
+                        <div>
+                            <label for="input-header-1" class="block text-xs font-semibold text-slate-700 mb-1">Encabezado Superior (Línea 1)</label>
+                            <input type="text" id="input-header-1" required
+                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label for="input-header-2" class="block text-xs font-semibold text-slate-700 mb-1">Encabezado Superior (Línea 2)</label>
+                            <input type="text" id="input-header-2" required
+                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Botón Principal -->
+                <div class="pt-1 pb-2 mt-auto">
+                    <button type="submit" class="w-full py-3.5 px-6 bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-semibold rounded-2xl shadow-md flex items-center justify-center gap-2 transition">
+                        <span>Generar / Ver Carnet</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ===================================================================
+             PESTAÑA 2: CARNET UNIVERSITARIO EN VIVO
+             =================================================================== -->
+        <section id="view-credential" class="hidden flex-1 flex flex-col bg-white select-none safe-top safe-bottom overflow-y-auto">
+            
+            <!-- Bloque Superior Agrupado (Barra + Logos + Perfil + Información) -->
+            <div class="w-full">
+                <!-- 1. Barra Superior Blanca -->
+                <header class="bg-[#FFFFFF] px-4 h-[52px] flex items-center justify-between relative">
+                    <button id="btn-back" type="button" aria-label="Volver al formulario" class="w-10 h-10 -ml-2 flex items-center justify-center rounded-full active:bg-gray-100 text-[#111827] transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"></path>
+                        </svg>
+                    </button>
+                    <h1 class="text-[18px] font-semibold text-[#111827] tracking-[-0.01em] absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
+                        Carnet universitario
+                    </h1>
+                    <div class="w-8"></div>
+                </header>
+
+                <!-- SECCIÓN 1: Logos + Universidad -->
+                <div class="bg-[#FFFFFF] border-b-2 border-[#D1D5DB] px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <!-- Logo Izquierdo -->
+                    <div id="card-logo-left" class="w-10 h-10 flex items-center justify-center shrink-0"></div>
+
+                    <!-- Textos Institucionales Centrales -->
+                    <div class="text-center flex-1 min-w-0 px-1">
+                        <p id="card-header-1" class="text-[11.5px] font-normal text-[#374151] leading-tight">
+                            Republica del Peru
+                        </p>
+                        <p id="card-header-2" class="text-[14px] sm:text-[15px] font-semibold text-[#111827] leading-snug tracking-[-0.01em] truncate">
+                            Univ. Nacional Mayor De San Marcos
+                        </p>
+                    </div>
+
+                    <!-- Logo Derecho -->
+                    <div id="card-logo-right" class="w-10 h-10 flex items-center justify-center shrink-0"></div>
+                </div>
+
+                <!-- SECCIÓN 2: Foto y Nombre / DNI / Permanencia -->
+                <div class="bg-[#FFFFFF] border-b-2 border-[#D1D5DB] px-4 py-4 flex items-start gap-4">
+                    <!-- Fotografía vertical 3:4 -->
+                    <div class="w-[108px] sm:w-[116px] aspect-[3/4] rounded-lg overflow-hidden bg-slate-100 border border-[#E5E7EB] shrink-0">
+                        <img id="card-photo" src="" alt="Foto del estudiante" class="w-full h-full object-cover">
+                    </div>
+
+                    <!-- Datos del Titular -->
+                    <div class="flex-1 min-w-0 pt-0.5 space-y-2.5">
+                        <h2 id="card-name" class="text-[17px] sm:text-[18px] font-bold text-[#111827] leading-snug tracking-[-0.01em] break-words">
+                            SEÑOR SIX SEVEN
+                        </h2>
+
+                        <div>
+                            <p class="text-[12px] font-normal text-[#6b7280] leading-tight">DNI</p>
+                            <p id="card-dni" class="text-[15.5px] font-semibold text-[#111827] leading-snug">67676767</p>
+                        </div>
+
+                        <div>
+                            <p class="text-[12px] font-normal text-[#6b7280] leading-tight">Permanencia</p>
+                            <p id="card-status" class="text-[15.5px] font-semibold text-[#111827] leading-snug">Activo</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: Información con Código / Facultad / Escuela -->
+                <div class="bg-[#FFFFFF] border-b-2 border-[#D1D5DB] px-4 py-4 space-y-3">
+                    <h3 class="text-[17.5px] font-bold text-[#111827] tracking-[-0.01em]">
+                        Información
+                    </h3>
+
+                    <div>
+                        <p class="text-[12px] font-normal text-[#6b7280] leading-tight">Código</p>
+                        <p id="card-code" class="text-[15.5px] font-semibold text-[#111827] leading-snug">24200067</p>
+                    </div>
+
+                    <div>
+                        <p class="text-[12px] font-normal text-[#6b7280] leading-tight">Facultad</p>
+                        <p id="card-faculty" class="text-[14.5px] font-semibold text-[#111827] leading-snug uppercase">
+                            INGENIERÍA DE SISTEMAS E INFORMÁTICA
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-[12px] font-normal text-[#6b7280] leading-tight">Escuela</p>
+                        <p id="card-school" class="text-[14.5px] font-semibold text-[#111827] leading-snug">
+                            E.P. de Ingeniería de Sistemas
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bloque Inferior Agrupado (Validez en vivo + Código de barras) -->
+            <div class="w-full">
+                <!-- SECCIÓN 4: Validez en vivo con reloj HH:MM:SS y fecha sincronizada -->
+                <div class="bg-[#FFFFFF] border-b-2 border-[#D1D5DB] px-4 py-5 flex flex-col items-center justify-center text-center">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f3f4f6] mb-2.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#22c55e] animate-pulse"></span>
+                        <span class="text-[11px] font-bold tracking-[0.06em] text-[#374151] uppercase">
+                            VALIDEZ EN VIVO
+                        </span>
+                    </div>
+
+                    <div id="live-time" class="text-[48px] sm:text-[52px] font-bold text-[#111827] leading-none tracking-[-0.02em] tabular-nums">
+                        10:54:59
+                    </div>
+
+                    <p id="live-date" class="text-[13px] font-normal text-[#6b7280] mt-2.5">
+                        Viernes, 27 de noviembre de 2026
+                    </p>
+                </div>
+
+                <!-- SECCIÓN 5: Código de barras lineal 1D para escanear -->
+                <div class="bg-[#FFFFFF] px-5 py-5 flex items-center justify-center">
+                    <div id="barcode-container" class="w-full max-w-[355px] h-[62px] overflow-hidden"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Toast / Mensaje de notificación discreto -->
+        <div id="toast-msg" class="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-slate-900/95 text-white text-xs font-medium shadow-lg opacity-0 transition-opacity duration-200 whitespace-nowrap">
+            Cambios guardados en este dispositivo
+        </div>
+
+    </main>
+
+    <!-- Lógica de la Aplicación -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Clave única en localStorage para que cada dispositivo guarde su propia configuración independiente
+            const STORAGE_KEY = 'carnet_universitario_device_v2';
+
+            // Valores por defecto
+            const DEFAULT_DATA = {
+                name: 'SEÑOR SIX SEVEN',
+                dni: '67676767',
+                status: 'Activo',
+                code: '24200067',
+                faculty: 'INGENIERÍA DE SISTEMAS E INFORMÁTICA',
+                school: 'E.P. de Ingeniería de Sistemas',
+                header1: 'Republica del Peru',
+                header2: 'Univ. Nacional Mayor De San Marcos',
+                photo: null,
+                logoLeft: null,
+                logoRight: null,
+                barcodeImg: null
+            };
+
+            // Gráficos de respaldo (se muestran si el usuario no sube imágenes propias)
+            const DEFAULT_AVATAR_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
+                    <rect width="300" height="400" fill="#E2E8F0"/>
+                    <circle cx="150" cy="145" r="56" fill="#94A3B8"/>
+                    <path d="M55 365C55 300 95 255 150 255C205 255 245 300 245 365" fill="#94A3B8"/>
+                </svg>
+            `);
+
+            const DEFAULT_LOGO_LEFT_SVG = `
+                <svg viewBox="0 0 64 64" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 10H52V32C52 46 32 56 32 56C32 56 12 46 12 32V10Z" fill="#FEF2F2" stroke="#B91C1C" stroke-width="3"/>
+                    <path d="M12 10H32V32H12V10Z" fill="#DC2626"/>
+                    <path d="M32 32H52C52 46 32 56 32 56V32Z" fill="#DC2626"/>
+                    <circle cx="32" cy="31" r="8" fill="#FACC15" stroke="#92400E" stroke-width="2"/>
+                </svg>
+            `;
+
+            const DEFAULT_LOGO_RIGHT_SVG = `
+                <svg viewBox="0 0 64 64" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="32" cy="32" r="26" fill="#FEF9C3" stroke="#B45309" stroke-width="3"/>
+                    <circle cx="32" cy="32" r="19" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="2"/>
+                    <path d="M22 29L32 23L42 29L32 35L22 29Z" fill="#1E3A8A"/>
+                    <path d="M25 32V39C25 39 28 42 32 42C36 42 39 39 39 39V32" stroke="#1E3A8A" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            `;
+
+            // Estado en memoria
+            let state = loadFromDeviceStorage();
+            let toastTimer = null;
+
+            // Referencias DOM - Vistas
+            const viewConfig = document.getElementById('view-config');
+            const viewCredential = document.getElementById('view-credential');
+            const form = document.getElementById('credential-form');
+            const btnBack = document.getElementById('btn-back');
+            const btnResetAll = document.getElementById('btn-reset-all');
+            const toastMsg = document.getElementById('toast-msg');
+
+            // Referencias DOM - Inputs de Imágenes
+            const inputPhoto = document.getElementById('input-photo');
+            const previewPhoto = document.getElementById('preview-photo');
+            const btnClearPhoto = document.getElementById('btn-clear-photo');
+
+            const inputLogoLeft = document.getElementById('input-logo-left');
+            const previewLogoLeft = document.getElementById('preview-logo-left');
+            const btnClearLogoLeft = document.getElementById('btn-clear-logo-left');
+
+            const inputLogoRight = document.getElementById('input-logo-right');
+            const previewLogoRight = document.getElementById('preview-logo-right');
+            const btnClearLogoRight = document.getElementById('btn-clear-logo-right');
+
+            const inputBarcodeImg = document.getElementById('input-barcode-img');
+            const previewBarcodeImg = document.getElementById('preview-barcode-img');
+            const btnClearBarcodeImg = document.getElementById('btn-clear-barcode-img');
+
+            // Referencias DOM - Inputs de Texto
+            const inputName = document.getElementById('input-name');
+            const inputDni = document.getElementById('input-dni');
+            const inputStatus = document.getElementById('input-status');
+            const inputCode = document.getElementById('input-code');
+            const inputFaculty = document.getElementById('input-faculty');
+            const inputSchool = document.getElementById('input-school');
+            const inputHeader1 = document.getElementById('input-header-1');
+            const inputHeader2 = document.getElementById('input-header-2');
+
+            // Referencias DOM - Tarjeta (Pestaña 2)
+            const cardHeader1 = document.getElementById('card-header-1');
+            const cardHeader2 = document.getElementById('card-header-2');
+            const cardLogoLeft = document.getElementById('card-logo-left');
+            const cardLogoRight = document.getElementById('card-logo-right');
+            const cardPhoto = document.getElementById('card-photo');
+            const cardName = document.getElementById('card-name');
+            const cardDni = document.getElementById('card-dni');
+            const cardStatus = document.getElementById('card-status');
+            const cardCode = document.getElementById('card-code');
+            const cardFaculty = document.getElementById('card-faculty');
+            const cardSchool = document.getElementById('card-school');
+            const liveTimeEl = document.getElementById('live-time');
+            const liveDateEl = document.getElementById('live-date');
+            const barcodeContainer = document.getElementById('barcode-container');
+
+            // Cargar datos desde el almacenamiento local del dispositivo
+            function loadFromDeviceStorage() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        return { ...DEFAULT_DATA, ...JSON.parse(saved) };
+                    }
+                } catch (err) {
+                    console.warn('No se pudo leer localStorage:', err);
+                }
+                return { ...DEFAULT_DATA };
+            }
+
+            // Guardar datos en el almacenamiento local del dispositivo
+            function saveToDeviceStorage() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (err) {
+                    showToast('Memoria llena: intenta usar una imagen más ligera');
+                }
+            }
+
+            // Notificación visual no intrusiva
+            function showToast(text) {
+                toastMsg.textContent = text;
+                toastMsg.classList.remove('opacity-0');
+                toastMsg.classList.add('opacity-100');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toastMsg.classList.remove('opacity-100');
+                    toastMsg.classList.add('opacity-0');
+                }, 2200);
+            }
+
+            // Compresión automática de imágenes mediante Canvas para evitar límites en iOS/Android
+            function compressImageFile(file, maxDimension, outputMime = 'image/jpeg') {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > maxDimension) {
+                                    height = Math.round((height * maxDimension) / width);
+                                    width = maxDimension;
+                                }
+                            } else {
+                                if (height > maxDimension) {
+                                    width = Math.round((width * maxDimension) / height);
+                                    height = maxDimension;
+                                }
+                            }
+
+                            const canvas = document.createElement('canvas');
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            const dataUrl = outputMime === 'image/png'
+                                ? canvas.toDataURL('image/png')
+                                : canvas.toDataURL('image/jpeg', 0.85);
+                            resolve(dataUrl);
+                        };
+                        img.onerror = reject;
+                        img.src = event.target.result;
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Sincronizar los campos de la Pestaña 1 con el estado actual
+            function syncConfigUI() {
+                inputName.value = state.name;
+                inputDni.value = state.dni;
+                inputStatus.value = state.status;
+                inputCode.value = state.code;
+                inputFaculty.value = state.faculty;
+                inputSchool.value = state.school;
+                inputHeader1.value = state.header1;
+                inputHeader2.value = state.header2;
+
+                // Foto
+                previewPhoto.src = state.photo || DEFAULT_AVATAR_SVG;
+
+                // Logo Izquierdo
+                if (state.logoLeft) {
+                    previewLogoLeft.innerHTML = `<img src="${state.logoLeft}" alt="Logo Izquierdo" class="w-full h-full object-contain">`;
+                } else {
+                    previewLogoLeft.innerHTML = DEFAULT_LOGO_LEFT_SVG;
+                }
+
+                // Logo Derecho
+                if (state.logoRight) {
+                    previewLogoRight.innerHTML = `<img src="${state.logoRight}" alt="Logo Derecho" class="w-full h-full object-contain">`;
+                } else {
+                    previewLogoRight.innerHTML = DEFAULT_LOGO_RIGHT_SVG;
+                }
+
+                // Vista previa del Código de Barras en Pestaña 1
+                if (state.barcodeImg) {
+                    previewBarcodeImg.innerHTML = `<img src="${state.barcodeImg}" alt="Código de barras cargado" class="max-w-full max-h-full object-contain">`;
+                } else {
+                    previewBarcodeImg.innerHTML = buildBarcodeSvgMarkup(state.code || DEFAULT_DATA.code, 'max-w-[180px] h-full block');
+                }
+            }
+
+            // Renderizar datos en la Pestaña 2 (Carnet Universitario)
+            function renderCredentialCard() {
+                cardHeader1.textContent = state.header1 || DEFAULT_DATA.header1;
+                cardHeader2.textContent = state.header2 || DEFAULT_DATA.header2;
+
+                if (state.logoLeft) {
+                    cardLogoLeft.innerHTML = `<img src="${state.logoLeft}" alt="Logo Institucional Izquierdo" class="w-full h-full object-contain">`;
+                } else {
+                    cardLogoLeft.innerHTML = DEFAULT_LOGO_LEFT_SVG;
+                }
+
+                if (state.logoRight) {
+                    cardLogoRight.innerHTML = `<img src="${state.logoRight}" alt="Logo Institucional Derecho" class="w-full h-full object-contain">`;
+                } else {
+                    cardLogoRight.innerHTML = DEFAULT_LOGO_RIGHT_SVG;
+                }
+
+                cardPhoto.src = state.photo || DEFAULT_AVATAR_SVG;
+                cardName.textContent = (state.name || DEFAULT_DATA.name).toUpperCase();
+                cardDni.textContent = state.dni || DEFAULT_DATA.dni;
+                cardStatus.textContent = state.status || DEFAULT_DATA.status;
+                cardCode.textContent = state.code || DEFAULT_DATA.code;
+                cardFaculty.textContent = (state.faculty || DEFAULT_DATA.faculty).toUpperCase();
+                cardSchool.textContent = state.school || DEFAULT_DATA.school;
+
+                if (state.barcodeImg) {
+                    barcodeContainer.innerHTML = `<img src="${state.barcodeImg}" alt="Código de barras ${state.code}" class="w-full h-full object-fill block">`;
+                } else {
+                    generateLinearBarcode(state.code || DEFAULT_DATA.code);
+                }
+            }
+
+            // Manejadores de carga de las imágenes independientes
+            inputPhoto.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                try {
+                    const compressed = await compressImageFile(file, 360, 'image/jpeg');
+                    state.photo = compressed;
+                    syncConfigUI();
+                    saveToDeviceStorage();
+                    showToast('Fotografía guardada');
+                } catch (err) {
+                    showToast('No se pudo procesar la foto');
+                }
+            });
+
+            btnClearPhoto.addEventListener('click', () => {
+                state.photo = null;
+                inputPhoto.value = '';
+                syncConfigUI();
+                saveToDeviceStorage();
+                showToast('Fotografía quitada');
+            });
+
+            inputLogoLeft.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                try {
+                    const compressed = await compressImageFile(file, 160, 'image/png');
+                    state.logoLeft = compressed;
+                    syncConfigUI();
+                    saveToDeviceStorage();
+                    showToast('Logo izquierdo actualizado');
+                } catch (err) {
+                    showToast('No se pudo procesar el logo');
+                }
+            });
+
+            btnClearLogoLeft.addEventListener('click', () => {
+                state.logoLeft = null;
+                inputLogoLeft.value = '';
+                syncConfigUI();
+                saveToDeviceStorage();
+                showToast('Logo izquierdo restaurado');
+            });
+
+            inputLogoRight.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                try {
+                    const compressed = await compressImageFile(file, 160, 'image/png');
+                    state.logoRight = compressed;
+                    syncConfigUI();
+                    saveToDeviceStorage();
+                    showToast('Logo derecho actualizado');
+                } catch (err) {
+                    showToast('No se pudo procesar el logo');
+                }
+            });
+
+            btnClearLogoRight.addEventListener('click', () => {
+                state.logoRight = null;
+                inputLogoRight.value = '';
+                syncConfigUI();
+                saveToDeviceStorage();
+                showToast('Logo derecho restaurado');
+            });
+
+            inputBarcodeImg.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                try {
+                    const compressed = await compressImageFile(file, 480, 'image/png');
+                    state.barcodeImg = compressed;
+                    syncConfigUI();
+                    saveToDeviceStorage();
+                    showToast('Código de barras actualizado');
+                } catch (err) {
+                    showToast('No se pudo procesar el código de barras');
+                }
+            });
+
+            btnClearBarcodeImg.addEventListener('click', () => {
+                state.barcodeImg = null;
+                inputBarcodeImg.value = '';
+                syncConfigUI();
+                saveToDeviceStorage();
+                showToast('Código de barras automático restaurado');
+            });
+
+            // Restaurar todos los valores por defecto en este dispositivo
+            btnResetAll.addEventListener('click', () => {
+                state = { ...DEFAULT_DATA };
+                inputPhoto.value = '';
+                inputLogoLeft.value = '';
+                inputLogoRight.value = '';
+                inputBarcodeImg.value = '';
+                saveToDeviceStorage();
+                syncConfigUI();
+                renderCredentialCard();
+                showToast('Datos restaurados por defecto');
+            });
+
+            // Guardar al enviar el formulario y cambiar a la vista del Carnet
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                state.name = inputName.value.trim();
+                state.dni = inputDni.value.trim();
+                state.status = inputStatus.value;
+                state.code = inputCode.value.trim();
+                state.faculty = inputFaculty.value.trim();
+                state.school = inputSchool.value.trim();
+                state.header1 = inputHeader1.value.trim();
+                state.header2 = inputHeader2.value.trim();
+
+                saveToDeviceStorage();
+                renderCredentialCard();
+                updateLiveClock();
+
+                viewConfig.classList.add('hidden');
+                viewCredential.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'instant' });
+
+                // Activar pantalla completa inmersiva en Android / navegadores compatibles
+                try {
+                    const docEl = document.documentElement;
+                    if (!document.fullscreenElement && docEl.requestFullscreen) {
+                        docEl.requestFullscreen().catch(() => {});
+                    } else if (!document.webkitFullscreenElement && docEl.webkitRequestFullscreen) {
+                        docEl.webkitRequestFullscreen();
+                    }
+                } catch (err) {}
+            });
+
+            // Regresar a la pantalla de edición
+            btnBack.addEventListener('click', () => {
+                // Salir de pantalla completa si estaba activa
+                try {
+                    if (document.fullscreenElement && document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                } catch (err) {}
+
+                viewCredential.classList.add('hidden');
+                viewConfig.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'instant' });
+            });
+
+            // Reloj en Tiempo Real Sincronizado con el Dispositivo
+            const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const MONTHS_ES = [
+                'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+            ];
+
+            function padTwo(num) {
+                return String(num).padStart(2, '0');
+            }
+
+            function updateLiveClock() {
+                const now = new Date();
+                const hours = padTwo(now.getHours());
+                const minutes = padTwo(now.getMinutes());
+                const seconds = padTwo(now.getSeconds());
+                liveTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+
+                const dayName = DAYS_ES[now.getDay()];
+                const dayNumber = now.getDate();
+                const monthName = MONTHS_ES[now.getMonth()];
+                const year = now.getFullYear();
+                liveDateEl.textContent = `${dayName}, ${dayNumber} de ${monthName} de ${year}`;
+            }
+
+            // Generador de Código de Barras Lineal 1D en SVG a partir del Código Universitario
+            function buildBarcodeSvgMarkup(codeText, extraClass = 'w-full h-full block') {
+                const cleanCode = String(codeText || '24200067').trim();
+                const patterns = [
+                    [2, 1, 2, 2, 2, 2],
+                    [2, 2, 2, 1, 2, 2],
+                    [1, 2, 1, 2, 2, 3],
+                    [1, 1, 1, 3, 2, 3],
+                    [1, 3, 1, 1, 2, 3],
+                    [1, 1, 2, 1, 3, 3],
+                    [2, 1, 1, 2, 3, 2],
+                    [1, 2, 3, 1, 1, 3],
+                    [3, 1, 1, 2, 1, 3],
+                    [2, 2, 1, 1, 1, 4]
+                ];
+
+                const sequence = [[2, 1, 1, 4, 1, 2]];
+                let checksum = 104;
+
+                for (let i = 0; i < cleanCode.length; i++) {
+                    const charCode = cleanCode.charCodeAt(i);
+                    const idx = charCode % patterns.length;
+                    sequence.push(patterns[idx]);
+                    checksum += (charCode * (i + 1));
+                }
+
+                sequence.push(patterns[checksum % patterns.length]);
+                sequence.push([2, 3, 3, 1, 1, 1, 2]);
+
+                let totalUnits = 0;
+                sequence.forEach(group => group.forEach(w => totalUnits += w));
+
+                let currentX = 0;
+                let rectsSvg = '';
+
+                sequence.forEach(group => {
+                    group.forEach((widthUnits, idx) => {
+                        if (idx % 2 === 0) {
+                            rectsSvg += `<rect x="${currentX}" y="0" width="${widthUnits}" height="62" fill="#111827" />`;
+                        }
+                        currentX += widthUnits;
+                    });
+                });
+
+                return `
+                    <svg viewBox="0 0 ${totalUnits} 62" preserveAspectRatio="none" class="${extraClass}" role="img" aria-label="Código de barras ${cleanCode}">
+                        ${rectsSvg}
+                    </svg>
+                `;
+            }
+
+            function generateLinearBarcode(codeText) {
+                barcodeContainer.innerHTML = buildBarcodeSvgMarkup(codeText, 'w-full h-full block');
+            }
+
+            // Registrar el Service Worker físico (sw.js) para habilitar instalación PWA en Android
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').catch(() => {});
+                });
+            }
+
+            // Inicialización
+            syncConfigUI();
+            renderCredentialCard();
+            updateLiveClock();
+            setInterval(updateLiveClock, 1000);
+        });
+    </script>
+</body>
+</html>
